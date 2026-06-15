@@ -16,6 +16,11 @@ import queries as q
 
 st.set_page_config(page_title="IPL Analytics", page_icon="🏏", layout="wide")
 
+# Shared chart styling so every figure feels like one dashboard.
+SCALE = "Tealgrn"          # more = better (runs, win %, venue scoring)
+SCALE_R = "Tealgrn_r"      # less = better (economy)
+PLOTLY_CONFIG = {"displayModeBar": False}
+
 
 @st.cache_resource
 def get_engine():
@@ -35,14 +40,27 @@ def run(sql, params):
         return pd.read_sql(text(sql), conn, params=params)
 
 
-def hbar(df, x, y, fmt=":.0f"):
-    fig = px.bar(df, x=x, y=y, orientation="h", text=x)
-    fig.update_traces(texttemplate="%{text" + fmt + "}", textposition="outside")
+def _style(fig, height=400, bottom=0):
     fig.update_layout(
-        yaxis={"categoryorder": "total ascending", "title": ""},
-        xaxis={"title": ""}, height=400, margin=dict(l=0, r=10, t=10, b=0),
+        template="plotly_dark",
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        coloraxis_showscale=False,
+        height=height,
+        margin=dict(l=0, r=30, t=10, b=bottom),
+        font=dict(size=13),
     )
+    fig.update_xaxes(showgrid=False)
+    fig.update_yaxes(showgrid=False)
     return fig
+
+
+def hbar(df, x, y, fmt="%{text:.0f}", scale=SCALE, order="total ascending"):
+    fig = px.bar(df, x=x, y=y, orientation="h", text=x,
+                 color=x, color_continuous_scale=scale)
+    fig.update_traces(texttemplate=fmt, textposition="outside", cliponaxis=False)
+    fig.update_layout(yaxis={"categoryorder": order, "title": ""}, xaxis={"title": ""})
+    return _style(fig)
 
 
 # ------------------------------------------------------------------- sidebar
@@ -52,70 +70,85 @@ season = st.sidebar.selectbox(
     "Season", ["All"] + [str(s) for s in season_df["season"].tolist()]
 )
 st.sidebar.caption("Data: IPL 2008–2024 ball-by-ball")
+st.sidebar.caption("Source: Kaggle · Warehouse: Supabase (PostgreSQL)")
 
 # -------------------------------------------------------------- header + KPIs
-scope = "All Seasons" if season == "All" else f"Season {season}"
-st.title("IPL Analytics Dashboard")
-st.caption(f"Showing: **{scope}**")
+scope = "All Seasons (2008–2024)" if season == "All" else f"Season {season}"
+st.title("🏏 IPL Analytics Dashboard")
+st.markdown(f"##### {scope}")
+st.write("")
 
 k = run(*q.kpis(season)).iloc[0]
-c1, c2, c3, c4 = st.columns(4)
-c1.metric("Matches", f"{int(k['matches']):,}")
-c2.metric("Total Runs", f"{int(k['runs']):,}")
-c3.metric("Wickets", f"{int(k['wickets']):,}")
-c4.metric("Sixes", f"{int(k['sixes']):,}")
+cards = [
+    ("🏟️ Matches", int(k["matches"])),
+    ("🏏 Total Runs", int(k["runs"])),
+    ("🎯 Wickets", int(k["wickets"])),
+    ("💥 Sixes", int(k["sixes"])),
+]
+for col, (label, value) in zip(st.columns(4), cards):
+    with col.container(border=True):
+        st.metric(label, f"{value:,}")
 
-st.divider()
+st.write("")
 
 # ----------------------------------------------------------------- charts 2x2
 left, right = st.columns(2)
 
 with left:
-    st.subheader("Top 10 Run Scorers")
-    df = run(*q.top_run_scorers(season))
-    st.info("No data for this selection.") if df.empty else st.plotly_chart(
-        hbar(df, "runs", "player_name"), use_container_width=True
-    )
+    with st.container(border=True):
+        st.subheader("Top 10 Run Scorers")
+        df = run(*q.top_run_scorers(season))
+        if df.empty:
+            st.info("No data for this selection.")
+        else:
+            st.plotly_chart(hbar(df, "runs", "player_name"),
+                            use_container_width=True, config=PLOTLY_CONFIG)
 
 with right:
-    st.subheader("Best Bowling Economy")
-    df = run(*q.bowling_economy(season))
-    if df.empty:
-        st.info("Not enough deliveries for this selection.")
-    else:
-        fig = px.bar(df, x="economy", y="player_name", orientation="h", text="economy")
-        fig.update_traces(texttemplate="%{text:.2f}", textposition="outside")
-        fig.update_layout(
-            yaxis={"categoryorder": "total descending", "title": ""},
-            xaxis={"title": "runs/over"}, height=400, margin=dict(l=0, r=10, t=10, b=0),
-        )
-        st.plotly_chart(fig, use_container_width=True)
+    with st.container(border=True):
+        st.subheader("Best Bowling Economy")
+        df = run(*q.bowling_economy(season))
+        if df.empty:
+            st.info("Not enough deliveries for this selection.")
+        else:
+            fig = hbar(df, "economy", "player_name", fmt="%{text:.2f}",
+                       scale=SCALE_R, order="total descending")
+            fig.update_xaxes(title="runs / over")
+            st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
 
 left2, right2 = st.columns(2)
 
 with left2:
-    st.subheader("Team Win %")
-    df = run(*q.team_win_pct(season))
-    if df.empty:
-        st.info("No data for this selection.")
-    else:
-        fig = px.bar(df, x="team_name", y="win_pct", text="win_pct")
-        fig.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
-        fig.update_layout(
-            xaxis={"title": "", "categoryorder": "total descending"},
-            yaxis={"title": "Win %"}, height=430, margin=dict(l=0, r=0, t=10, b=120),
-        )
-        fig.update_xaxes(tickangle=-45)
-        st.plotly_chart(fig, use_container_width=True)
+    with st.container(border=True):
+        st.subheader("Team Win %")
+        df = run(*q.team_win_pct(season))
+        if df.empty:
+            st.info("No data for this selection.")
+        else:
+            fig = px.bar(df, x="team_name", y="win_pct", text="win_pct",
+                         color="win_pct", color_continuous_scale=SCALE)
+            fig.update_traces(texttemplate="%{text:.1f}%", textposition="outside",
+                              cliponaxis=False)
+            fig.update_layout(
+                xaxis={"title": "", "categoryorder": "total descending"},
+                yaxis={"title": "Win %"},
+            )
+            fig.update_xaxes(tickangle=-45)
+            st.plotly_chart(_style(fig, height=430, bottom=120),
+                            use_container_width=True, config=PLOTLY_CONFIG)
 
 with right2:
-    st.subheader("Highest Scoring Venues")
-    df = run(*q.venue_scoring(season))
-    st.info("No data for this selection.") if df.empty else st.plotly_chart(
-        hbar(df, "avg_runs", "venue_name"), use_container_width=True
-    )
+    with st.container(border=True):
+        st.subheader("Highest Scoring Venues")
+        df = run(*q.venue_scoring(season))
+        if df.empty:
+            st.info("No data for this selection.")
+        else:
+            fig = hbar(df, "avg_runs", "venue_name")
+            fig.update_xaxes(title="avg runs / match")
+            st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
 
 st.caption(
     "Economy ≈ total runs conceded ÷ overs bowled (includes byes/legbyes). "
-    "Win % over matches played; teams with renamed franchises are merged."
+    "Win % over matches played; renamed franchises are merged into one team."
 )
