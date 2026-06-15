@@ -24,10 +24,19 @@ PLOTLY_CONFIG = {"displayModeBar": False}
 
 @st.cache_resource
 def get_engine():
+    # Local dev reads .env; Streamlit Community Cloud reads st.secrets.
     load_dotenv()
     url = os.getenv("SUPABASE_DB_URL")
     if not url:
-        st.error("SUPABASE_DB_URL not set — check your .env file.")
+        try:
+            url = st.secrets["SUPABASE_DB_URL"]
+        except Exception:
+            url = None
+    if not url:
+        st.error(
+            "SUPABASE_DB_URL not set. Locally: add it to .env. "
+            "On Streamlit Cloud: add it under Manage app → Settings → Secrets."
+        )
         st.stop()
     if url.startswith("postgresql://"):
         url = url.replace("postgresql://", "postgresql+psycopg2://", 1)
