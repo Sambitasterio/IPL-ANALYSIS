@@ -11,16 +11,16 @@ Built with Python, Pandas, SQLAlchemy, **Apache Airflow** (Docker), **Supabase
 
 ## 📊 Dashboard
 
-![IPL Analytics Dashboard](assets/dashboard.png)
+![IPL Analytics Dashboard](assets/dashboard-overview.png)
 
-![Team Win % and Venue Scoring](assets/dashboard_teams.png)
+![Team Win % and Venue Scoring](assets/dashboard-teams.png)
 
 Season-filterable KPIs and charts — top run scorers, bowling economy, team win %,
 and highest-scoring venues — served from the PostgreSQL warehouse.
 
 ## 🛠️ Orchestration (Airflow)
 
-![Airflow DAG](assets/airflow_dag.png)
+![Airflow DAG](assets/airflow-dag.png)
 
 The full ETL runs as a DAG: `check_raw → transform → load → validate`.
 
