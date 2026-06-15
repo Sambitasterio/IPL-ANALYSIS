@@ -13,6 +13,8 @@ Built with Python, Pandas, SQLAlchemy, **Apache Airflow** (Docker), **Supabase
 
 ![IPL Analytics Dashboard](assets/dashboard.png)
 
+![Team Win % and Venue Scoring](assets/dashboard_teams.png)
+
 Season-filterable KPIs and charts — top run scorers, bowling economy, team win %,
 and highest-scoring venues — served from the PostgreSQL warehouse.
 
