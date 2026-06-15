@@ -7,6 +7,13 @@ on PostgreSQL, with data-quality checks and an interactive analytics dashboard.
 Built with Python, Pandas, SQLAlchemy, **Apache Airflow** (Docker), **Supabase
 (PostgreSQL)**, and **Streamlit**.
 
+### 🔗 [**Live Demo →**](https://sambitasterio-ipl-analysis-app-gkdf7y.streamlit.app/)
+
+[![Streamlit](https://img.shields.io/badge/Streamlit-Live%20App-FF4B4B?logo=streamlit&logoColor=white)](https://sambitasterio-ipl-analysis-app-gkdf7y.streamlit.app/)
+![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Supabase-4169E1?logo=postgresql&logoColor=white)
+![Airflow](https://img.shields.io/badge/Apache%20Airflow-2.8-017CEE?logo=apacheairflow&logoColor=white)
+
 ---
 
 ## 📊 Dashboard
